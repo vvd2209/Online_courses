@@ -2,8 +2,8 @@ from django.db.models import F
 from rest_framework import status
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 from rest_framework.response import Response
-from users.models import Subscription
 
+from users.models import Subscription
 from courses.models import Group
 
 

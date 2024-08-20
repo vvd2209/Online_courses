@@ -14,10 +14,17 @@ def post_save_subscription(sender, instance: Subscription, created, **kwargs):
     """
 
     if created:
-        group = (
-            Group.objects.filter(course=instance.course)
-            .annotate(students_count=Count("students"))
-            .order_by("students_count")
-            .first()
-        )
-        group.students.add(instance.student)
+        groups = Group.objects.filter(course=instance.course)
+
+        # Если группы не созданы, создаём их
+        if not groups.exists():
+            for i in range(1, 11):  # создаём 10 групп
+                Group.objects.create(course=instance.course, title=i)
+
+            groups = Group.objects.filter(course=instance.course)
+
+        # Находим самую менее заполненную группу
+        least_populated_group = min(groups, key=lambda g: g.students.count())
+
+        # Добавляем студента в выбранную группу
+        least_populated_group.students.add(instance.student)

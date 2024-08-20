@@ -13,9 +13,6 @@ def make_payment(request, course):
         request.user.balance.save()
         request.user.balance.refresh_from_db()
 
-        group, _ = Group.objects.get_or_create(title=f"Группа {course.id % 10 + 1}", course=course)
-        group.students.add(request.user)
-
         return Response({'message': 'Оплата прошла успешно!'}, status=status.HTTP_201_CREATED)
     else:
         raise ValueError("Недостаточно бонусных баллов для оплаты курса.")

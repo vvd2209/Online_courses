@@ -1,3 +1,6 @@
+from django.db import transaction
+from django.db.models import Count, ExpressionWrapper, IntegerField, Value, Avg
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets, permissions
 from rest_framework.decorators import action
@@ -11,8 +14,13 @@ from api.v1.serializers.course_serializer import (CourseSerializer,
                                                   GroupSerializer,
                                                   LessonSerializer)
 from api.v1.serializers.user_serializer import SubscriptionSerializer
-from courses.models import Course
+from courses.models import Course, Group
 from users.models import Subscription
+from django.contrib.auth import get_user_model
+
+from api.v1.permissions import make_payment
+
+User = get_user_model()
 
 
 class LessonViewSet(viewsets.ModelViewSet):
@@ -69,12 +77,16 @@ class CourseViewSet(viewsets.ModelViewSet):
         detail=True,
         permission_classes=(permissions.IsAuthenticated,)
     )
-    def pay(self, request, pk):
+    def pay(self, request, pk=None):
         """Покупка доступа к курсу (подписка на курс)."""
 
-        # TODO
-
-        return Response(
-            data=data,
-            status=status.HTTP_201_CREATED
-        )
+        course = get_object_or_404(Course, pk=pk)
+        data = {"course": course.id, "student": request.user.id}
+        serializer = SubscriptionSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            make_payment(request, course)
+            return Response(
+                data=serializer.data, status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=404)
